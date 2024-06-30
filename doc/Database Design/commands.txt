@@ -1,0 +1,88 @@
+CREATE TABLE Sport (
+    name VARCHAR(40),
+    PRIMARY KEY (name)
+);
+
+CREATE TABLE Team (
+    team_name VARCHAR(40),
+    manager VARCHAR(40),
+    PRIMARY KEY (team_name)
+);
+
+CREATE TABLE SportsMatch (
+    match_id int NOT NULL,
+    home VARCHAR(40),
+    away VARCHAR(40),
+    result VARCHAR(40),
+    PRIMARY KEY (match_id),
+    FOREIGN KEY (home) REFERENCES Team(team_name),
+    FOREIGN KEY (away) REFERENCES Team(team_name)
+);
+
+CREATE TABLE User (
+    username VARCHAR(40),
+    password VARCHAR(40),
+    email VARCHAR(40),
+    name VARCHAR(40),
+    PRIMARY KEY (username)
+);
+
+CREATE TABLE Player (
+    player_id int NOT NULL,
+    name VARCHAR(40),
+    ratings int,
+    PRIMARY KEY (player_id)
+);
+
+CREATE TABLE Stats (
+    player_id int NOT NULL,
+    attribute VARCHAR(40),
+    player_value VARCHAR(40),
+    PRIMARY KEY (player_id),
+    FOREIGN KEY (player_id) REFERENCES Player(player_id)
+);
+
+CREATE TABLE Plays_match(
+    home_team VARCHAR(40),
+    away_team VARCHAR(40),
+    match_id int,
+    PRIMARY KEY (home_team, away_team, match_id),
+    FOREIGN KEY (home_team) REFERENCES Team(team_name),
+    FOREIGN KEY (away_team) REFERENCES Team(team_name),
+    FOREIGN KEY (match_id) REFERENCES SportsMatch(match_id)
+);
+
+CREATE TABLE Sport_type(
+    team_name VARCHAR(40),
+    sport VARCHAR(40),
+    PRIMARY KEY (team_name, sport),
+    FOREIGN KEY (team_name) REFERENCES Team(team_name),
+    FOREIGN KEY (sport) REFERENCES Sport(name)
+);
+
+
+CREATE TABLE Roster(
+    team_name VARCHAR(40),
+    player_id int,
+    PRIMARY KEY (team_name, player_id),
+    FOREIGN KEY (team_name) REFERENCES Team(team_name),
+    FOREIGN KEY (player_id) REFERENCES Player(player_id)
+);
+
+CREATE TABLE Plays_sport(
+    sport VARCHAR(40),
+    player_id int,
+    PRIMARY KEY (sport, player_id),
+    FOREIGN KEY (sport) REFERENCES Sport(name),
+    FOREIGN KEY (player_id) REFERENCES Player(player_id)
+);
+
+CREATE TABLE Follows(
+    team_name VARCHAR(40),
+    player_id int,
+    sport VARCHAR(40),
+    PRIMARY KEY (sport, player_id, team_name),
+    FOREIGN KEY (sport) REFERENCES Sport(name),
+    FOREIGN KEY (player_id) REFERENCES Player(player_id),
+    FOREIGN KEY (team_name) REFERENCES Team(team_name)
+);

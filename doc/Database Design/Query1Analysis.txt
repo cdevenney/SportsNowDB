@@ -1,0 +1,79 @@
+QUERY 1 (DEFAULT INDEXING ANALYSIS, full table scan, unique key lookup on nested loop):
+
+'-> Sort: NumHomeWins DESC  (cost=2.50 rows=0) (actual time=0.021..0.023 rows=30 loops=1)\n    -> Table scan on <union temporary>  (cost=2.50 rows=0) (actual time=0.000..0.003 rows=30 loops=1)\n        -> Union materialize with deduplication  (cost=2.50..2.50 rows=0) (actual time=2.853..2.857 rows=30 loops=1)\n            -> Table scan on <temporary>  (actual time=0.001..0.002 rows=17 loops=1)\n                -> Aggregate using temporary table  (actual time=1.457..1.459 rows=17 loops=1)\n                    -> Nested loop inner join  (cost=143.25 rows=105) (actual time=0.076..1.132 rows=517 loops=1)\n                        -> Filter: ((s.result = \'H-W\') and (s.home is not null))  (cost=106.50 rows=105) (actual time=0.060..0.601 rows=517 loops=1)\n                            -> Table scan on s  (cost=106.50 rows=1050) (actual time=0.055..0.380 rows=1050 loops=1)\n                        -> Single-row index lookup on t using PRIMARY (team_name=s.home)  (cost=0.25 rows=1) (actual time=0.001..0.001 rows=1 loops=517)\n            -> Table scan on <temporary>  (actual time=0.000..0.002 rows=13 loops=1)\n  
+              -> Aggregate using temporary table  (actual time=1.352..1.354 rows=13 loops=1)\n                    -> Nested loop inner join  (cost=143.25 rows=105) (actual time=0.037..1.032 rows=517 loops=1)\n                        -> Filter: ((s.result = \'H-W\') and (s.away is not null))  (cost=106.50 rows=105) (actual time=0.033..0.504 rows=517 loops=1)\n                            -> Table scan on s  (cost=106.50 rows=1050) (actual time=0.032..0.320 rows=1050 loops=1)\n                        -> Single-row index lookup on t using PRIMARY (team_name=s.away)  (cost=0.25 rows=1) (actual time=0.001..0.001 rows=1 loops=517)\n'
+
+total cost for each seperate block of the union: 143.25
+
+Index design 1:
+
+
+CREATE INDEX index1 ON SportsMatch(result) (non-unique key lookup on nested loop, unique key lookup on nested loop)
+
+-> Sort: NumHomeWins DESC  (cost=2.50 rows=0) (actual time=0.021..0.023 rows=30 loops=1)
+    -> Table scan on <union temporary>  (cost=2.50 rows=0) (actual time=0.000..0.003 rows=30 loops=1)
+        -> Union materialize with deduplication  (cost=2.50..2.50 rows=0) (actual time=3.124..3.127 rows=30 loops=1)
+            -> Table scan on <temporary>  (actual time=0.001..0.002 rows=17 loops=1)
+                -> Aggregate using temporary table  (actual time=1.662..1.664 rows=17 loops=1)
+                    -> Nested loop inner join  (cost=237.15 rows=517) (actual time=0.190..1.305 rows=517 loops=1)
+                        -> Filter: (s.home is not null)  (cost=56.20 rows=517) (actual time=0.182..0.758 rows=517 loops=1)
+                            -> Index lookup on s using index1 (result='H-W')  (cost=56.20 rows=517) (actual time=0.181..0.719 rows=517 loops=1)
+                        -> Single-row index lookup on t using PRIMARY (team_name=s.home)  (cost=0.25 rows=1) (actual time=0.001..0.001 rows=1 loops=517)
+            -> Table scan on <temporary>  (actual time=0.000..0.001 rows=13 loops=1)
+                -> Aggregate using temporary table  (actual time=1.419..1.421 rows=13 loops=1)
+                    -> Nested loop inner join  (cost=237.15 rows=517) (actual time=0.117..1.123 rows=517 loops=1)
+                        -> Filter: (s.away is not null)  (cost=56.20 rows=517) (actual time=0.113..0.593 rows=517 loops=1)
+                            -> Index lookup on s using index1 (result='H-W')  (cost=56.20 rows=517) (actual time=0.113..0.556 rows=517 loops=1)
+                        -> Single-row index lookup on t using PRIMARY (team_name=s.away)  (cost=0.25 rows=1) (actual time=0.001..0.001 rows=1 loops=517)
+
+
+total cost for each seperate block of the union: 237.15
+
+Index Design 2: 
+
+CREATE INDEX index1 ON SportsMatch(home, away) (Full Table Scan and unique key lookup on nested loop)
+
+-> Sort: NumHomeWins DESC  (cost=2.50 rows=0) (actual time=0.025..0.027 rows=30 loops=1)
+    -> Table scan on <union temporary>  (cost=2.50 rows=0) (actual time=0.001..0.004 rows=30 loops=1)
+        -> Union materialize with deduplication  (cost=2.50..2.50 rows=0) (actual time=3.080..3.084 rows=30 loops=1)
+            -> Table scan on <temporary>  (actual time=0.001..0.002 rows=17 loops=1)
+                -> Aggregate using temporary table  (actual time=1.562..1.564 rows=17 loops=1)
+                    -> Nested loop inner join  (cost=143.25 rows=105) (actual time=0.073..1.154 rows=517 loops=1)
+                        -> Filter: ((s.result = 'H-W') and (s.home is not null))  (cost=106.50 rows=105) (actual time=0.058..0.554 rows=517 loops=1)
+                            -> Table scan on s  (cost=106.50 rows=1050) (actual time=0.052..0.344 rows=1050 loops=1)
+                        -> Single-row index lookup on t using PRIMARY (team_name=s.home)  (cost=0.25 rows=1) (actual time=0.001..0.001 rows=1 loops=517)
+            -> Table scan on <temporary>  (actual time=0.000..0.001 rows=13 loops=1)
+                -> Aggregate using temporary table  (actual time=1.470..1.472 rows=13 loops=1)
+                    -> Nested loop inner join  (cost=143.25 rows=105) (actual time=0.043..1.127 rows=517 loops=1)
+                        -> Filter: ((s.result = 'H-W') and (s.away is not null))  (cost=106.50 rows=105) (actual time=0.038..0.550 rows=517 loops=1)
+                            -> Table scan on s  (cost=106.50 rows=1050) (actual time=0.037..0.327 rows=1050 loops=1)
+                        -> Single-row index lookup on t using PRIMARY (team_name=s.away)  (cost=0.25 rows=1) (actual time=0.001..0.001 rows=1 loops=517)
+Total cost for each seperate block of the union: 143.25
+
+Index Design 3: 
+
+CREATE INDEX index1 ON SportsMatch(home, away)
+CREATE INDEX index2 ON SportsMatch(result)
+
+-> Sort: NumHomeWins DESC  (cost=2.50 rows=0) (actual time=0.025..0.027 rows=30 loops=1)
+    -> Table scan on <union temporary>  (cost=2.50 rows=0) (actual time=0.001..0.004 rows=30 loops=1)
+        -> Union materialize with deduplication  (cost=2.50..2.50 rows=0) (actual time=3.513..3.517 rows=30 loops=1)
+            -> Table scan on <temporary>  (actual time=0.001..0.003 rows=17 loops=1)
+                -> Aggregate using temporary table  (actual time=1.909..1.912 rows=17 loops=1)
+                    -> Nested loop inner join  (cost=237.15 rows=517) (actual time=0.226..1.554 rows=517 loops=1)
+                        -> Filter: (s.home is not null)  (cost=56.20 rows=517) (actual time=0.217..0.866 rows=517 loops=1)
+                            -> Index lookup on s using index3 (result='H-W')  (cost=56.20 rows=517) (actual time=0.216..0.810 rows=517 loops=1)
+                        -> Single-row index lookup on t using PRIMARY (team_name=s.home)  (cost=0.25 rows=1) (actual time=0.001..0.001 rows=1 loops=517)
+            -> Table scan on <temporary>  (actual time=0.001..0.002 rows=13 loops=1)
+                -> Aggregate using temporary table  (actual time=1.553..1.555 rows=13 loops=1)
+                    -> Nested loop inner join  (cost=237.15 rows=517) (actual time=0.148..1.223 rows=517 loops=1)
+                        -> Filter: (s.away is not null)  (cost=56.20 rows=517) (actual time=0.142..0.677 rows=517 loops=1)
+                            -> Index lookup on s using index3 (result='H-W')  (cost=56.20 rows=517) (actual time=0.141..0.638 rows=517 loops=1)
+                        -> Single-row index lookup on t using PRIMARY (team_name=s.away)  (cost=0.25 rows=1) (actual time=0.001..0.001 rows=1 loops=517)
+
+total cost for each seperate block of the union: 237.15
+
+Ultimately, our team decided to go with the default indices of the foreign keys and the primary key because it cost the least.
+Interestingly, when we created an index on the result of a sports match our cost went up when looking for non unique key values.
+This makes sense because non-unique key lookups work better on lower amounts of rows and matches has 1005 rows. The full table
+scan yielded the lowest cost indexing.

@@ -1,0 +1,17 @@
+.App {
+  text-align: center;
+}
+
+.flex-container {
+  flex-direction: row;
+  justify-content: space-evenly;
+  align-items: flex-start;
+  display: flex;
+}
+
+.gif-container {
+  flex-direction: row;
+  justify-content: space-evenly;
+  align-items: flex-start;
+  display: flex;
+}

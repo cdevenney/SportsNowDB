@@ -1,0 +1,6 @@
+Trigger,Event,Table,Statement,Timing,Created,sql_mode,Definer,character_set_client,collation_connection,"Database Collation"
+rating_check,UPDATE,Player,"BEGIN
+           IF NEW.ratings > 100 THEN
+               SET NEW.ratings = 100;
+           END IF;
+       END",BEFORE,"2022-12-02 03:20:54.15","ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION",root@%,utf8mb4,utf8mb4_0900_ai_ci,utf8mb4_0900_ai_ci
